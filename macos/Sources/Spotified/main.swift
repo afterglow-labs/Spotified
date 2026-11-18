@@ -72,7 +72,7 @@ final class NoRedirect: NSObject, URLSessionTaskDelegate {
         window.subtitle = "by Afterglow Labs"
         window.minSize = NSSize(width: 760, height: 540)
         window.appearance = NSAppearance(named: .darkAqua)
-        window.backgroundColor = NSColor(srgbRed: 40/255, green: 44/255, blue: 52/255, alpha: 1)
+        window.backgroundColor = NSColor(srgbRed: 18/255, green: 8/255, blue: 32/255, alpha: 1)
         window.setFrameAutosaveName("SpotifiedMainWindow")
         let configuration = WKWebViewConfiguration()
         configuration.userContentController.add(self, name: "connection")
@@ -85,8 +85,8 @@ final class NoRedirect: NSObject, URLSessionTaskDelegate {
         NSLayoutConstraint.activate([webView.leadingAnchor.constraint(equalTo: window.contentView!.leadingAnchor), webView.trailingAnchor.constraint(equalTo: window.contentView!.trailingAnchor), webView.topAnchor.constraint(equalTo: window.contentView!.topAnchor), webView.bottomAnchor.constraint(equalTo: window.contentView!.bottomAnchor)])
         statusLabel = NSTextField(wrappingLabelWithString: "Connecting to Spotified…")
         statusLabel.alignment = .center
-        statusLabel.font = .monospacedSystemFont(ofSize: 16, weight: .regular)
-        statusLabel.textColor = NSColor(srgbRed: 156/255, green: 222/255, blue: 242/255, alpha: 1)
+        statusLabel.font = .systemFont(ofSize: 16, weight: .regular)
+        statusLabel.textColor = NSColor(srgbRed: 255/255, green: 242/255, blue: 233/255, alpha: 1)
         statusLabel.translatesAutoresizingMaskIntoConstraints = false
         window.contentView!.addSubview(statusLabel)
         NSLayoutConstraint.activate([statusLabel.centerXAnchor.constraint(equalTo: window.contentView!.centerXAnchor), statusLabel.centerYAnchor.constraint(equalTo: window.contentView!.centerYAnchor), statusLabel.widthAnchor.constraint(equalToConstant: 540)])

@@ -1,16 +1,22 @@
 # Spotified design and verification
 
-The user requested the way Odysseus functions and looks: a standalone app window, saved credentials, and a server connection. The active reference is [spotified-concept.png](spotified-concept.png), generated after the user named the app **Spotified, by Afterglow Labs**.
+Spotified uses Odysseus's **Afterglow** theme: its named preset in `static/js/theme.js` and static sunset background in `static/style.css`. The earlier [Spotified concept](spotified-concept.png) records the original layout; its Dark palette has been replaced.
 
 ## Design system
 
-The live Odysseus checkout supplied the dark palette and Fira Code typography: canvas `#282c34`, sidebar `#111111`, text `#9cdef2`, coral accent `#e06c75`, borders `#355a66`. The background is solid dark charcoal, without a gradient or image overlay. Fira Code regular and semibold files are self-hosted with their OFL license. Controls are 13–14px, the page title 28px, the empty-state title 22px, sidebar 224px. Mobile uses a 62px icon rail and wrapping form controls.
+The Afterglow palette uses canvas `#120820`, panel `#241237`, sidebar `#1a0a2e`, ivory text `#fff2e9`, orange accent `#ff8000`, branding `#ff6a00`, and borders `#7d6480`. Inputs use `#2f154b` with `#8f6894` borders. Primary actions use white with dark purple text and an orange hover; checked controls use `#a54764`. These values come directly from Odysseus's base and advanced preset colors.
+
+Four static radial gradients reproduce the desktop sunset glow without animation. The UI uses Odysseus's system sans-serif stack; Fira Code is retained only for code/log text. The native iOS surface uses Odysseus's orange/purple radial backdrop and toggle tint. Afterglow remains the default and old Dark selections migrate automatically; explicit Light preferences remain supported on iOS. The Mac window and connecting label match the purple/ivory palette and system font.
+
+Controls remain 13–14px, the page title 28px, the empty-state title 22px, and sidebar 224px. Mobile uses a 62px icon rail and wrapping form controls.
+
+Verified on November 18, 2026: the production frontend build and existing browser flow pass login, library navigation, playback/seeking, settings persistence, queue actions, and mobile overflow checks. Computed styles match the Afterglow preset. Screenshots: [desktop](qa/web-afterglow-desktop.png), [mobile settings](qa/web-afterglow-mobile.png), and [native iOS](qa/ios-odysseus-afterglow.png). The WSL theme was applied as static assets only; the container and download worker kept the same process IDs. The broader Spotify catalog server update remains staged.
 
 Allowed primary-screen copy: Spotified; by Afterglow Labs; Library; Albums; Artists; Playlists; Downloads; Settings; Your music, organized.; Add music; Search your library; Refresh; Your collection starts here; Add a Spotify album, playlist, or track.; Artists, albums, and artwork will appear here.; This Mac · Docker; Spotify connected; 0 tracks. Connection state and track counts are real data. A native OS titlebar supplies the window controls, not simulated browser chrome.
 
 React components separate the app shell, library, downloads, settings, and API calls. The library uses real metadata, cover files or embedded artwork, M3U8 entries, and audio playback. The queue and settings extend the same flat, separated-row visual system because the user explicitly requested those functions. No fake albums, statistics, or media are shown in the personal library. The native icon is a separate Image Gen asset at `macos/Spotified.png`; it is packaged as `Spotified.icns`.
 
-## Evidence and method
+## Earlier layout verification
 
 - Native AppKit/WKWebView window inspected through CUA at 1200px logical width. Confirmed its own titlebar, no URL bar, library navigation, settings, and live Spotify metadata preview.
 - Cold start tested with the Docker service stopped: opening `/Applications/Spotified.app` started the service, authenticated with Keychain credentials, and displayed the connected library.
@@ -19,7 +25,7 @@ React components separate the app shell, library, downloads, settings, and API c
 - Mobile checked at 390×844. Fresh mobile contexts avoid a Chrome fractional-scale screenshot compositor artifact observed after resizing a desktop context. DOM width and screenshots are checked for overflow.
 - `view_image` inspection compared the concept and final desktop/mobile captures in the same QA pass. Screenshots: [desktop library](qa/library-desktop.png), [mobile library](qa/library-empty-mobile.png), [mobile request pacing](qa/pacing-mobile.png). Test-only library screenshots use temporary fixture media, not personal downloads.
 
-## Fidelity ledger
+## Original concept comparison (before the Afterglow replacement)
 
 | Comparison | Evidence and resolution |
 | --- | --- |

@@ -33,7 +33,7 @@ The server serves compatible media directly and prepares Ogg/Opus as temporary A
 
 ## Install
 
-Version **0.5.0 (7)** includes the Spotify tab, Afterglow default appearance, and the updated music icon. Browsing requires the matching server update. It reuses the Spotify account already connected to that server. See [catalog behavior and API](../docs/SPOTIFY-CATALOG.md).
+Version **0.5.0 (8)** includes the Spotify tab, Odysseus's Afterglow appearance with its static background glow and control colors, and the updated music icon. Browsing requires the matching server update. It reuses the Spotify account already connected to that server. See [catalog behavior and API](../docs/SPOTIFY-CATALOG.md).
 
 The signed IPA is `ios/.build/Export/Spotified.ipa`. A versioned copy is delivered to the registered iPhone through Tailscale Taildrop, matching the existing Odysseus/Feather workflow. Receive the IPA in Tailscale and import it into Feather to sign/install using your configured identity. Keep bundle identifier `com.afterglowlabs.spotified.ios`.
 
@@ -99,3 +99,5 @@ The final iPad playback check passes in `Library-Playback-iPad-QA-2.xcresult`. S
 The Spotify catalog UI passed browsing, search, selection, and queue submission against an isolated WSL server with downloads disabled. Build 7 passed **19 unit/API tests**, including fresh-install and retired-theme migration, plus the existing native navigation UI flow against the loopback fixture. Results are in `Afterglow-Unit-7.xcresult` and `Afterglow-UI-7.xcresult` under `ios/.build` on the Mac. Screenshots: [Afterglow login](../docs/qa/ios-afterglow-login.png) and [Afterglow account](../docs/qa/ios-afterglow-account.png).
 
 The signed `Spotified-0.5.0-7.ipa` is available under `ios/.build/Export` in the Windows checkout and Mac build workspace, with a copy on the Mac Desktop. Archive signature, bundle version, packaged icon, and ZIP integrity passed verification. The matching server update is staged pending the active download; physical iPhone installation has not been observed.
+
+Build **0.5.0 (8)** matches Odysseus's native Afterglow backdrop and switch color. All 19 unit/API tests and the native navigation fixture flow passed in `Odysseus-Theme-Unit-8.xcresult` and `Odysseus-Theme-UI-8.xcresult`. The signed `Spotified-0.5.0-8.ipa` is in `ios/.build/Export` on Windows and the Mac, with a Mac Desktop copy; signature, version and ZIP integrity were verified. [Native appearance screenshot](../docs/qa/ios-odysseus-afterglow.png).

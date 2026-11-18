@@ -20,7 +20,7 @@ The WSL2 server runs at `https://nibiru-darklight-1.osiris-cosmological.ts.net:8
 
 See [iOS build and usage](ios/README.md) and [WSL deployment and storage](docs/WSL.md).
 
-Version 0.5.0 adds the Spotify account browser and search to the native client. Afterglow is the default appearance, with a matching purple and orange music icon. Existing Dark preferences migrate to Afterglow; Light remains available.
+Version 0.5.0 adds the Spotify account browser and search to the native client. The web and desktop clients use Odysseus's Afterglow palette, static sunset glow, and system typography. The iOS app defaults to the matching native Afterglow appearance, with a purple and orange music icon. Existing Dark preferences migrate to Afterglow; Light remains available on iOS.
 
 ### Build and run
 
