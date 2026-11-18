@@ -1,20 +1,21 @@
 [build-system]
 requires = [
-  "setuptools >= 40.9.0",
+  "setuptools >= 77.0.0",
   "wheel",
 ]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "zotify"
-version = "0.22.0"
+name = "spotified"
+version = "0.22.1"
 description = "A highly customizable music and podcast downloader"
 authors = [
+  { name = "Afterglow Labs" },
   { name = "Zotify Contributors" },
   { name = "Googolplexed" },
 ]
 requires-python = ">=3.10"
-license = "Unlicense"
+license = "Zlib"
 license-files = ["LICENSE"]
 readme = "README.md"
 keywords = ["python", "music", "podcast", "downloader"]
@@ -23,19 +24,38 @@ classifiers = [
   "Operating System :: OS Independent"
 ]
 dependencies = [
-  "librespot @ git+https://github.com/Googolplexed0/librespot-python.git",
+  "librespot @ git+https://github.com/Googolplexed0/librespot-python.git@01abfc8ad012dbc40e90417e640faaf271ea2f98",
   "ffmpy",
   "music_tag",
+  "mutagen",
   "Pillow",
   "pkce",
   "protobuf==3.20.1",
   "pwinput",
+  "requests>=2.31,<3",
   "tabulate[widechars]",
-  "tqdm"
+  "tqdm",
+  "urllib3>=2,<3"
 ]
 
+[project.optional-dependencies]
+dev = ["pytest>=8,<10", "pylint>=3,<5", "build>=1,<2"]
+
+[project.urls]
+Repository = "https://github.com/afterglow-labs/Spotified"
+
+[tool.setuptools.packages.find]
+include = ["spotified*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
 [project.scripts]
-zotify = "zotify.__main__:main"
+spotified = "spotified.__main__:main"
+spotified-server = "spotified.web:main"
+
+[tool.setuptools.package-data]
+spotified = ["web_static/*", "web_static/assets/*"]
 
 [tool.uv]
 config-settings = { editable_mode = "compat" }

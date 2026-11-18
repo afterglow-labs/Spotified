@@ -10,7 +10,7 @@ Following these guidelines helps show that you respect the the time and effort s
 
 ## What we are looking for
 
-Zotify is a community-driven project. There are many different ways to contribute. From providing tutorials and examples to help new users, reporting bugs, requesting new features, writing new code that can be added to the project, or even writing documentation.
+Spotified is a community-driven project. There are many different ways to contribute. From providing tutorials and examples to help new users, reporting bugs, requesting new features, writing new code that can be added to the project, or even writing documentation.
 
 ## What we aren't looking for
 

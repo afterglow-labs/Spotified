@@ -2,7 +2,6 @@ name: Bug Report
 title: "[Bug Report] <title>"
 description: To Request Bug Investigation and Fixes
 labels: ["bug"]
-projects: ["Googolplexed0/zotify"]
 assignees:
   - Googolplexed0
 
@@ -10,7 +9,7 @@ body:
   - type: input
     id: version
     attributes:
-      label: Zotify Version
+      label: Spotified Version
       placeholder: ex. v0.17.0
     validations:
       required: true
@@ -53,7 +52,7 @@ body:
     attributes:
       label: Bug-Triggering Command
       description: The command that caused the bug/error/crash, including relevant url arguments
-      value: "zotify "
+      value: "spotified "
       render: shell
     validations:
       required: true

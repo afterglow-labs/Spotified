@@ -150,13 +150,22 @@ uv.lock
 .python-version
 
 # Configuration
-.zotify/
+.spotified/
 config.json
 credentials.json
+api_credentials.json
 
 # Download Folder
-Zotify\ Music/
-Zotify\ Podcasts/
+Spotified\ Music/
+Spotified\ Podcasts/
 
 # Testing
 debug.py
+node_modules/
+frontend/test-results/
+frontend/playwright-report/
+macos/.build/
+ios/.build/
+ios/Spotified.xcodeproj/
+ios/Info.plist
+*.xcuserstate

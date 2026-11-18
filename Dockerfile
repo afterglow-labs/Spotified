@@ -1,22 +1,13 @@
-FROM python:3.10-alpine AS base
+FROM python:3.11-slim
 
-RUN apk --update add ffmpeg git
-
-FROM base AS builder
-
-WORKDIR /install
-COPY requirements.txt /requirements.txt
-
-RUN apk add gcc libc-dev zlib zlib-dev jpeg-dev
-RUN pip install --prefix="/install" -r /requirements.txt
-
-FROM base
-
-COPY --from=builder /install /usr/local/lib/python3.10/site-packages
-RUN mv /usr/local/lib/python3.10/site-packages/lib/python3.10/site-packages/* /usr/local/lib/python3.10/site-packages/
-
-COPY zotify /app/zotify
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends ffmpeg git \
+    && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
+COPY pyproject.toml README.md LICENSE ./
+COPY spotified ./spotified
+RUN pip install --no-cache-dir .
+
 EXPOSE 4381
-CMD ["python3", "-m", "zotify"]
+ENTRYPOINT ["spotified"]

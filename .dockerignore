@@ -1,0 +1,14 @@
+.git
+.venv
+__pycache__
+*.pyc
+*.egg-info
+dist
+build
+credentials.json
+api_credentials.json
+config.json
+.spotified
+frontend/node_modules
+macos/.build
+docs

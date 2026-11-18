@@ -1,0 +1,155 @@
+#! /usr/bin/env python3
+
+"""
+Spotified
+It's like youtube-dl, but for that other music platform.
+"""
+
+import argparse
+
+from spotified.config import Spotified, Printer, CONFIG_VALUES, DEPRECIATED_CONFIGS
+from spotified.const import ARG, TYPE, HELP, DEBUG, TEST_MODE, CONFIG_LOCATION, CONFIG_FILE, LOCAL_SONG_ARCHIVE, GLOBAL_SONG_ARCHIVE
+
+
+class DepreciatedAction(argparse.Action):
+    def __init__(self, option_strings, dest, **kwargs):
+        if HELP in kwargs:
+            kwargs[HELP] = "[DEPRECATED] " + kwargs[HELP]
+        super().__init__(option_strings, dest, **kwargs)
+    
+    def __call__(self, parser, namespace, values, option_string=None):
+        Printer.depreciated_warning(option_string, self.help, CONFIG=False)
+        setattr(namespace, self.dest, values)
+
+
+DEPRECIATED_ARGS = (
+    {ARG:    ('-d', '--download',),     TYPE:    str,     HELP:    'Use `--file` (`-f`) instead' },
+    {ARG:    ('-ns', '--no-splash',),   TYPE:    str,     HELP:    'Use `PRINT_SPLASH` instead'  },
+)
+
+
+def main():
+    parser = argparse.ArgumentParser(prog='spotified',
+        description='A music and podcast downloader needing only Python and FFMPEG.')
+    
+    parser.register('action', 'depreciated_ignore_warn', DepreciatedAction)
+    
+    # no args
+    parser.add_argument('-V', '--version',
+                        action='version',
+                        version=f'Spotified {Spotified.VERSION}',
+                        help='Show the version of Spotified')
+    parser.add_argument('-P', '--persist',
+                        action='store_true',
+                        dest='persist',
+                        help='Perform multiple Queries with a single persistent Session')
+    parser.add_argument('-T', '--test', '--dry-run',
+                        action='store_true',
+                        dest=TEST_MODE.lower(),
+                        help='Run a Query as a test, making no downloads')
+    parser.add_argument('--update-config',
+                        action='store_true',
+                        dest='update_config',
+                        help=f'Updates the `{CONFIG_FILE}` file while keeping all current settings unchanged')
+    parser.add_argument('--doctor', action='store_true',
+                        help='Check configuration and FFmpeg locally, without logging in or changing files')
+    parser.add_argument('--update-archive',
+                        action='store_true',
+                        dest='update_archive',
+                        help=f'Updates the global `{GLOBAL_SONG_ARCHIVE}` file with full filepaths, keeping non-findable entries unchanged')
+    parser.add_argument('--debug',
+                        action='store_true',
+                        dest=DEBUG.lower(),
+                        help=f'Enables debugging, printing extra information and creating a `{CONFIG_FILE.replace(".json", "_DEBUG.json")}` file')
+    
+    # with args
+    parser.add_argument('-c', '--config', '--config-location',
+                        type=str,
+                        dest=CONFIG_LOCATION.lower(),
+                        help=f'Specify a directory containing a Spotified `{CONFIG_FILE}` file to load settings')
+    parser.add_argument('-u', '--username',
+                        type=str,
+                        dest='username',
+                        help='Account username')
+    parser.add_argument('--token',
+                        type=str,
+                        dest='token',
+                        help='Authentication token')
+    
+    group = parser.add_mutually_exclusive_group(required=False)
+    group.add_argument('urls',
+                       type=str,
+                       # action='extend',
+                       nargs='*',
+                       default="",
+                       help='Download track(s), album(s), playlist(s), podcast episode(s), or artist(s) specified by the URL(s) passed as a command line argument(s). If an artist\'s URL is given, all albums by the specified artist will be downloaded. Can take multiple URLs as multiple arguments.')
+    group.add_argument('-f', '--file',
+                       type=str,
+                       dest='file_of_urls',
+                       help='Download all tracks/albums/episodes/playlists URLs within the file passed as argument')
+    group.add_argument('-l', '--liked', '--liked-songs', 
+                       action='store_true',
+                       dest='liked_songs',
+                       help='Download all Liked Songs on your account')
+    group.add_argument('-p', '--playlist', '--playlists', '--user-playlists',
+                       action='store_true',
+                       dest='user_playlists',
+                       help='Download playlist(s) created/saved by your account (interactive)')
+    group.add_argument('-a', '--artist', '--artists', '--followed-artists',
+                       action='store_true',
+                       dest='followed_artists',
+                       help='Download all songs by followed artist(s) (interactive)')
+    group.add_argument('-m', '--album', '--albums', '--followed-albums',
+                       action='store_true',
+                       dest='followed_albums',
+                       help='Download followed albums (interactive)')
+    group.add_argument('-s', '--search',
+                       type=str,
+                       dest='search',
+                       nargs='?',
+                       const=' ',
+                       help='Search tracks/albums/artists/playlists based on argument (interactive)')
+    group.add_argument('-v', '--verify-library',
+                       action='store_true',
+                       dest='verify_library',
+                       help=f'Update metadata for all Tracks in `ROOT_PATH` with an entry in the global `{GLOBAL_SONG_ARCHIVE}` or directory `{LOCAL_SONG_ARCHIVE}`, no tracks will be downloaded.')
+    modes = group._group_actions.copy()
+    
+    for arg in DEPRECIATED_ARGS: 
+        group.add_argument(*arg[ARG],
+                           type=arg[TYPE],
+                           help=arg[HELP],
+                           action='depreciated_ignore_warn')
+    
+    for key in DEPRECIATED_CONFIGS:
+        parser.add_argument(*DEPRECIATED_CONFIGS[key][ARG],
+                            type=str,
+                            action='depreciated_ignore_warn',
+                            help=f'Delete the `{key}` flag from the commandline call'
+                            )
+    
+    for key in CONFIG_VALUES:
+        parser.add_argument(*CONFIG_VALUES[key][ARG],
+                            type=str, #type conversion occurs in config.parse_arg_value()
+                            dest=key.lower(),
+                            default=None,
+                            )
+    
+    args = parser.parse_args()
+    try:
+        Spotified.CONFIG.load(args, create=not args.doctor)
+    except (ValueError, TypeError, OSError, ZeroDivisionError) as exc:
+        parser.error(str(exc))
+    if args.doctor:
+        from spotified.diagnostics import doctor
+        raise SystemExit(doctor(args))
+    if args.update_config and not args.persist and not args.update_archive and not any(getattr(args, mode.dest) for mode in modes):
+        return
+    Spotified.boot(args)
+    
+    from spotified.app import client
+    client(args, modes)
+
+
+if __name__ == '__main__':
+    main()

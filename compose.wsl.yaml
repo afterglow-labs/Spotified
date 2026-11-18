@@ -1,0 +1,27 @@
+name: spotified
+
+services:
+  spotified:
+    image: spotified:local
+    build: .
+    container_name: spotified
+    user: "${SPOTIFIED_UID:-1000}:${SPOTIFIED_GID:-1000}"
+    entrypoint: ["spotified-server"]
+    command: ["--host", "0.0.0.0", "--config-dir", "/config", "--public-origin", "${SPOTIFIED_PUBLIC_ORIGIN:?Set the Tailscale HTTPS origin}"]
+    environment:
+      HOME: /tmp
+      SPOTIFIED_SERVER_NAME: "Nibiru-Darklight-1 · WSL2"
+    ports:
+      - "127.0.0.1:8088:8088"
+      - "127.0.0.1:4381:4381"
+    volumes:
+      - ./.spotified/docker:/config
+      - "${HOME}/Music/Spotified Music:/music"
+      - "${HOME}/Music/Spotified Podcasts:/podcasts"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8088/api/health', timeout=3)"]
+      interval: 20s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
