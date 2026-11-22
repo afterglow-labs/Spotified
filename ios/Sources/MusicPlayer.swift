@@ -110,6 +110,14 @@ import Observation
             }
         }
     }
+    func removeDeleted(_ ids: Set<String>) {
+        guard let current, queue.contains(where: { ids.contains($0.id) }) else { return }
+        if ids.contains(current.id) { stop(); return }
+        index = queue.prefix(index).filter { !ids.contains($0.id) }.count
+        queue.removeAll { ids.contains($0.id) }
+        updateNowPlaying()
+    }
+
     func toggle() { wantsPlayback ? pause() : resume() }
     func pause() { wantsPlayback = false; engine.pause(); isPlaying = false; isLoading = false; updateNowPlaying() }
     func resume() {

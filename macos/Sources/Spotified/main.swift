@@ -114,7 +114,7 @@ final class NoRedirect: NSObject, URLSessionTaskDelegate {
         NSApp.mainMenu = main
     }
     @objc func about() {
-        NSApp.orderFrontStandardAboutPanel(options: [.applicationName: "Spotified", .applicationVersion: "0.1.0", .credits: NSAttributedString(string: "by Afterglow Labs")])
+        NSApp.orderFrontStandardAboutPanel(options: [.applicationName: "Spotified", .credits: NSAttributedString(string: "by Afterglow Labs")])
     }
     @objc func reload() { connect(password: LoginStore.read(origin, username), remember: false) }
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool { window.makeKeyAndOrderFront(nil); return true }

@@ -99,6 +99,9 @@ private final class NoRedirect: NSObject, URLSessionTaskDelegate {
         return value
     }
     func library() async throws -> MusicLibrary { try decode(MusicLibrary.self, await send(request("/api/files")).0) }
+    func deleteLibraryFiles(_ ids: [String]) async throws -> LibraryDeletionResult {
+        try decode(LibraryDeletionResult.self, await send(request("/api/library/delete", method: "POST", body: ["ids": ids])).0)
+    }
     func spotify(_ catalog: SpotifyCatalogRequest, offset: Int = 0, refresh: Bool = false) async throws -> SpotifyCatalogPage {
         try decode(SpotifyCatalogPage.self, await send(request(catalog.path(offset: offset, refresh: refresh))).0)
     }

@@ -132,6 +132,24 @@ import UIKit
         } catch { if current == generation { report(error) }; return false }
     }
 
+    func deleteLibraryFiles(_ ids: [String]) async throws {
+        guard let api else { throw ClientError.signedOut }
+        guard !busy else { throw ClientError.message("Another request is in progress. Try again in a moment.") }
+        let current = generation
+        busy = true; error = nil; refreshGeneration = UUID(); refreshing = false
+        defer { if current == generation { busy = false } }
+        let result = try await api.deleteLibraryFiles(ids)
+        guard current == generation else { throw CancellationError() }
+        let removed = Set(result.removed)
+        player.removeDeleted(removed)
+        library.tracks.removeAll { removed.contains($0.id) }
+        library.playlists.removeAll { removed.contains($0.id) }
+        await refresh(force: true)
+        if !result.failed.isEmpty {
+            throw ClientError.message("Could not delete \(result.failed.count) of \(ids.count) files. Check the server’s library permissions.")
+        }
+    }
+
     func jobAction(_ job: DownloadJob, action: String) async {
         guard let api, !busy else { return }
         let current = generation; busy = true; error = nil; refreshGeneration = UUID(); refreshing = false

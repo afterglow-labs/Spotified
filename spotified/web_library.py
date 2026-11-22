@@ -1,6 +1,8 @@
-"""Read the server's music library without moving or modifying media files."""
+"""Index and manage the server's music and podcast libraries."""
 from io import BytesIO
+import os
 from pathlib import Path
+import stat
 import threading
 from urllib.parse import quote
 
@@ -8,6 +10,7 @@ import music_tag
 from PIL import Image, UnidentifiedImageError
 
 MEDIA_EXTENSIONS = {'.ogg', '.mp3', '.m4a', '.opus', '.flac', '.wav'}
+LIBRARY_EXTENSIONS = MEDIA_EXTENSIONS | {'.m3u8', '.m3u'}
 
 
 class Library:
@@ -53,6 +56,65 @@ class Library:
         self.cache[key] = (signature, track)
         return track
 
+    def delete(self, identifiers):
+        if not isinstance(identifiers, list) or not 1 <= len(identifiers) <= 20000:
+            raise ValueError('Choose files from your Spotified library.')
+        targets = {}
+        with self.lock:
+            for identifier in identifiers:
+                if not isinstance(identifier, str):
+                    raise ValueError('Invalid library file.')
+                kind, _, relative = identifier.partition('/')
+                parts = relative.split('/')
+                if (kind not in self.roots or any(part in {'', '.', '..'} for part in parts)
+                        or '\x00' in relative or Path(relative).suffix.lower() not in LIBRARY_EXTENSIONS):
+                    raise ValueError('Invalid library file.')
+                root = self.roots[kind]
+                path = root.joinpath(*parts)
+                try:
+                    resolved = path.resolve()
+                except (OSError, RuntimeError) as exc:
+                    raise ValueError('Invalid library file.') from exc
+                if not path.is_relative_to(root) or resolved != path:
+                    raise ValueError('Choose the original library file.')
+                targets[identifier] = (root, parts, path)
+
+            removed, failed = [], []
+            for identifier, (root, parts, path) in targets.items():
+                try:
+                    self._unlink_file(root, parts)
+                except FileNotFoundError:
+                    pass  # A repeated request already has the desired result.
+                except OSError:
+                    failed.append(identifier)
+                    continue
+                removed.append(identifier)
+                self.cache.pop(str(path), None)
+        return {'removed': removed, 'failed': failed}
+
+    @staticmethod
+    def _unlink_file(root, parts):
+        # Use directory handles so moving or replacing a parent with a symlink
+        # cannot redirect deletion outside the mounted library.
+        if os.unlink not in os.supports_dir_fd:
+            path = root.joinpath(*parts)
+            if path.resolve() != path or not stat.S_ISREG(path.lstat().st_mode):
+                raise OSError('Only regular library files can be deleted.')
+            path.unlink()
+            return
+        flags = os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW
+        directory = os.open(root, flags)
+        try:
+            for name in parts[:-1]:
+                child = os.open(name, flags, dir_fd=directory)
+                os.close(directory)
+                directory = child
+            if not stat.S_ISREG(os.stat(parts[-1], dir_fd=directory, follow_symlinks=False).st_mode):
+                raise OSError('Only regular library files can be deleted.')
+            os.unlink(parts[-1], dir_fd=directory)
+        finally:
+            os.close(directory)
+
     def scan(self):
         with self.lock:
             tracks, lists, seen = [], [], set()
@@ -62,9 +124,9 @@ class Library:
                     continue
                 for path in root.rglob('*'):
                     try:
-                        if path.suffix.lower() not in MEDIA_EXTENSIONS | {'.m3u8', '.m3u'}:
+                        if path.suffix.lower() not in LIBRARY_EXTENSIONS:
                             continue
-                        path = self.path(kind, path.relative_to(root), MEDIA_EXTENSIONS | {'.m3u8', '.m3u'})
+                        path = self.path(kind, path.relative_to(root), LIBRARY_EXTENSIONS)
                         if str(path) in seen:
                             continue
                         seen.add(str(path))

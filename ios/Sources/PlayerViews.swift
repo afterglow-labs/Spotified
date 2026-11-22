@@ -16,12 +16,14 @@ struct MiniPlayer: View {
                             Text(server.player.error == nil ? track.artist : "Playback needs attention").font(.caption).foregroundStyle(.secondary).lineLimit(1)
                         }.frame(maxWidth: .infinity, alignment: .leading)
                     }.contentShape(Rectangle())
-                }.buttonStyle(.plain).accessibilityLabel("Now playing").accessibilityIdentifier("nowPlaying")
+                }.buttonStyle(.plain).accessibilityLabel("Now playing").accessibilityValue(track.title).accessibilityIdentifier("nowPlaying")
                 if server.player.isLoading { ProgressView().accessibilityLabel("Preparing playback") }
+                Button { server.player.previous() } label: { Image(systemName: "backward.end.fill").frame(width: 32, height: 44) }
+                    .disabled(!server.player.hasPrevious).accessibilityLabel("Previous song").accessibilityIdentifier("miniPrevious")
                 Button { server.player.toggle() } label: { Image(systemName: server.player.isPlaying ? "pause.fill" : "play.fill").font(.title2).frame(width: 40, height: 44) }
                     .accessibilityLabel(server.player.isPlaying ? "Pause" : "Play").accessibilityIdentifier("miniPlayPause")
                 Button { server.player.next() } label: { Image(systemName: "forward.end.fill").frame(width: 32, height: 44) }
-                    .disabled(!server.player.hasNext).accessibilityLabel("Next song")
+                    .disabled(!server.player.hasNext).accessibilityLabel("Next song").accessibilityIdentifier("miniNext")
             }.padding(.horizontal, 16).padding(.vertical, 8).background(theme.panel)
         }
     }
@@ -57,7 +59,7 @@ struct NowPlayingView: View {
                         HStack { Text(time(seeking ? position : player.elapsed)).accessibilityIdentifier("playbackElapsed"); Spacer(); Text(time(player.duration)) }.font(.caption).monospacedDigit().foregroundStyle(.secondary)
                     }
                     HStack(spacing: 38) {
-                        Button { player.previous() } label: { Image(systemName: "backward.end.fill").font(.title) }.disabled(!player.hasPrevious).accessibilityLabel("Previous song")
+                        Button { player.previous() } label: { Image(systemName: "backward.end.fill").font(.title) }.disabled(!player.hasPrevious).accessibilityLabel("Previous song").accessibilityIdentifier("playerPrevious")
                         Button { player.toggle() } label: { Image(systemName: player.isPlaying ? "pause.circle.fill" : "play.circle.fill").font(.system(size: 68)) }
                             .accessibilityLabel(player.isPlaying ? "Pause" : "Play").accessibilityIdentifier("playerPlayPause")
                         Button { player.next() } label: { Image(systemName: "forward.end.fill").font(.title) }.disabled(!player.hasNext).accessibilityLabel("Next song").accessibilityIdentifier("playerNext")

@@ -111,7 +111,7 @@ struct CollectionBrowser: View {
         List(groups) { group in
             NavigationLink {
                 if mode == .artists { CollectionBrowser(mode: .albums, artistID: group.id, title: group.name) }
-                else { TrackListView(title: group.name, tracks: group.tracks) }
+                else { TrackListView(title: group.name, tracks: group.tracks, isAlbum: true) }
             } label: { CollectionRow(group: group) }.listRowBackground(theme.panel)
                 .accessibilityIdentifier((mode == .artists ? "artist-" : "album-") + group.id)
         }.navigationTitle(title ?? mode.rawValue).appSurface().searchable(text: $query, prompt: mode == .artists ? "Find an artist" : "Find an album")
@@ -127,7 +127,7 @@ struct PlaylistBrowser: View {
         List {
             ForEach(server.library.playlists) { playlist in
                 NavigationLink {
-                    TrackListView(title: playlist.name, tracks: playlist.tracks.compactMap { id in server.library.tracks.first { $0.id == id } }, unavailable: playlist.unavailable, preserveOrder: true)
+                    TrackListView(title: playlist.name, tracks: playlist.tracks.compactMap { id in server.library.tracks.first { $0.id == id } }, unavailable: playlist.unavailable, preserveOrder: true, playlistID: playlist.id)
                 } label: {
                     VStack(alignment: .leading, spacing: 5) {
                         Label(playlist.name, systemImage: "music.note.list")
@@ -140,6 +140,43 @@ struct PlaylistBrowser: View {
     }
 }
 
+private struct LibraryDeletion {
+    let title: String
+    let ids: [String]
+    var playlist = false
+    var collection = false
+
+    var message: String {
+        if playlist { return "This removes the local playlist file. Its songs stay in your library." }
+        let files = ids.count == 1 ? "the audio file" : "\(ids.count) audio files"
+        return "This permanently deletes \(files) from this Spotified server."
+    }
+}
+
+private struct DeleteLibraryItem: ViewModifier {
+    @Environment(ServerController.self) private var server
+    @Binding var target: LibraryDeletion?
+    var didDelete: (LibraryDeletion) -> Void
+    @State private var failure: String?
+
+    func body(content: Content) -> some View {
+        content.alert("Delete \(target?.title ?? "item")?", isPresented: Binding(
+            get: { target != nil }, set: { if !$0 { target = nil } }), presenting: target) { item in
+                Button("Cancel", role: .cancel) {}
+                Button("Delete", role: .destructive) {
+                    Task {
+                        do { try await server.deleteLibraryFiles(item.ids); didDelete(item) }
+                        catch { failure = error.localizedDescription }
+                    }
+                }
+            } message: { Text($0.message) }
+            .alert("Deletion failed", isPresented: Binding(
+                get: { failure != nil }, set: { if !$0 { failure = nil } })) {
+                    Button("OK", role: .cancel) {}
+                } message: { Text(failure ?? "") }
+    }
+}
+
 struct TrackListView: View {
     @Environment(ServerController.self) private var server
     @Environment(\.spotifiedTheme) private var theme
@@ -147,31 +184,58 @@ struct TrackListView: View {
     let tracks: [MusicTrack]
     var unavailable = 0
     var preserveOrder = false
+    var isAlbum = false
+    var playlistID: String?
+    @Environment(\.dismiss) private var dismiss
+    @State private var deletion: LibraryDeletion?
     @State private var alphabetically = false
     @State private var detail: MusicTrack?
-    private var ordered: [MusicTrack] { alphabetically ? tracks.sorted { $0.title.localizedStandardCompare($1.title) == .orderedAscending } : preserveOrder ? tracks : LibraryIndex.orderedTracks(tracks) }
+    private var ordered: [MusicTrack] {
+        let available = Set(server.library.tracks.map(\.id))
+        let songs = tracks.filter { available.contains($0.id) }
+        if alphabetically { return songs.sorted { $0.title.localizedStandardCompare($1.title) == .orderedAscending } }
+        return preserveOrder ? songs : LibraryIndex.orderedTracks(songs)
+    }
     var body: some View {
+        let songs = ordered
         List {
             if unavailable > 0 { Text("\(unavailable) playlist files are unavailable on the server.").foregroundStyle(.orange) }
-            if !ordered.isEmpty {
+            if !songs.isEmpty {
                 Section {
                     HStack {
-                        Button { server.play(ordered) } label: { Label("Play", systemImage: "play.fill") }.accessibilityIdentifier("playCollection")
+                        Button { server.play(songs) } label: { Label("Play", systemImage: "play.fill") }.accessibilityIdentifier("playCollection")
                         Spacer()
-                        Button { server.play(ordered.shuffled()) } label: { Label("Shuffle", systemImage: "shuffle") }
+                        Button { server.play(songs.shuffled()) } label: { Label("Shuffle", systemImage: "shuffle") }
                     }.buttonStyle(.borderless)
                 }.listRowBackground(theme.panel)
             }
-            ForEach(Array(ordered.enumerated()), id: \.offset) { index, track in
+            ForEach(Array(songs.enumerated()), id: \.offset) { index, track in
                 HStack {
-                    Button { server.play(ordered, startingAt: index) } label: { TrackRow(track: track).contentShape(Rectangle()) }
+                    Button { server.play(songs, startingAt: index) } label: { TrackRow(track: track).contentShape(Rectangle()) }
                         .buttonStyle(.borderless).accessibilityLabel("Play " + track.title).accessibilityIdentifier("play-track-" + track.id)
                     Button { detail = track } label: { Image(systemName: "info.circle").frame(width: 44, height: 44) }.buttonStyle(.borderless).accessibilityLabel("Details for " + track.title)
                 }.listRowBackground(theme.panel)
+                    .swipeActions(allowsFullSwipe: false) {
+                        Button("Delete", systemImage: "trash", role: .destructive) {
+                            deletion = LibraryDeletion(title: track.title, ids: [track.id])
+                        }.disabled(server.busy)
+                    }
+            }
+            if isAlbum || playlistID != nil {
+                Section {
+                    Button(role: .destructive) {
+                        deletion = LibraryDeletion(title: title, ids: playlistID.map { [$0] } ?? songs.map(\.id),
+                                                   playlist: playlistID != nil, collection: true)
+                    } label: { Label(playlistID == nil ? "Delete album" : "Delete playlist", systemImage: "trash") }
+                        .disabled(server.busy || (playlistID == nil && songs.isEmpty))
+                }.listRowBackground(theme.panel)
             }
         }.navigationTitle(title).navigationBarTitleDisplayMode(.inline).appSurface()
+            .modifier(DeleteLibraryItem(target: $deletion) { item in if item.collection { dismiss() } })
             .sheet(item: $detail) { track in
-                NavigationStack { TrackDetailView(track: track).toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { detail = nil } } } }
+                NavigationStack { TrackDetailView(track: track, play: {
+                    if let index = songs.firstIndex(where: { $0.id == track.id }) { server.play(songs, startingAt: index) }
+                }, didDelete: { detail = nil }).toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { detail = nil } } } }
             }
             .toolbar { ToolbarItem(placement: .topBarTrailing) {
                 Menu { Picker("Song order", selection: $alphabetically) { Text(preserveOrder ? "Original order" : "Disc and track order").tag(false); Text("Title A–Z").tag(true) } }
@@ -184,6 +248,9 @@ struct TrackDetailView: View {
     @Environment(ServerController.self) private var server
     @Environment(\.spotifiedTheme) private var theme
     let track: MusicTrack
+    let play: () -> Void
+    let didDelete: () -> Void
+    @State private var deletion: LibraryDeletion?
     var body: some View {
         List {
             Section {
@@ -191,7 +258,7 @@ struct TrackDetailView: View {
                     CoverView(path: track.artwork, size: 220)
                     Text(track.title).font(.title2.bold()).multilineTextAlignment(.center)
                     Text(track.artist).foregroundStyle(.secondary)
-                    Button { server.play([track]) } label: { Label("Play", systemImage: "play.fill") }.buttonStyle(.borderedProminent)
+                    Button { play() } label: { Label("Play", systemImage: "play.fill") }.buttonStyle(.borderedProminent)
                 }.frame(maxWidth: .infinity).padding(.vertical, 20)
             }.listRowBackground(Color.clear)
             Section("In your server library") {
@@ -202,6 +269,12 @@ struct TrackDetailView: View {
                 LabeledContent("Size", value: ByteCountFormatter.string(fromByteCount: track.size, countStyle: .file))
             }.listRowBackground(theme.panel)
             Section("Server file") { Text(track.folder + "/" + track.name).font(.caption).textSelection(.enabled) }.listRowBackground(theme.panel)
-        }.navigationTitle("Song details").navigationBarTitleDisplayMode(.inline).appSurface()
+            Section {
+                Button(role: .destructive) { deletion = LibraryDeletion(title: track.title, ids: [track.id]) }
+                    label: { Label("Delete from server", systemImage: "trash") }
+                    .disabled(server.busy)
+            }.listRowBackground(theme.panel)
+        }.modifier(DeleteLibraryItem(target: $deletion) { _ in didDelete() })
+            .navigationTitle("Song details").navigationBarTitleDisplayMode(.inline).appSurface()
     }
 }

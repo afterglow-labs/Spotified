@@ -4,7 +4,6 @@ MODE="${1:---verify}"
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 APP="$ROOT_DIR/dist/Spotified.app"
 export PATH="/opt/homebrew/opt/node@22/bin:/opt/homebrew/bin:/usr/bin:/bin:$PATH"
-pkill -x Spotified >/dev/null 2>&1 || true
 cd "$ROOT_DIR/frontend"
 node /opt/homebrew/opt/node@22/lib/node_modules/npm/bin/npm-cli.js run build
 cd "$ROOT_DIR"
@@ -17,8 +16,8 @@ import os, plistlib
 from pathlib import Path
 root = Path(os.environ['SPOTIFIED_ROOT'])
 values = dict(CFBundleName='Spotified', CFBundleDisplayName='Spotified',
-              CFBundleIdentifier='com.afterglowlabs.spotified', CFBundleVersion='1',
-              CFBundleShortVersionString='0.1.0', CFBundleExecutable='Spotified',
+              CFBundleIdentifier='com.afterglowlabs.spotified', CFBundleVersion='9',
+              CFBundleShortVersionString='0.6.0', CFBundleExecutable='Spotified',
               CFBundlePackageType='APPL', NSPrincipalClass='NSApplication',
               LSMinimumSystemVersion='13.0', NSHighResolutionCapable=True,
               CFBundleIconFile='Spotified', NSHumanReadableCopyright='Afterglow Labs',
@@ -37,6 +36,7 @@ if [ -e /Applications/Spotified.app ]; then
   INSTALLED_ID=$(/usr/libexec/PlistBuddy -c 'Print CFBundleIdentifier' /Applications/Spotified.app/Contents/Info.plist)
   [ "$INSTALLED_ID" = com.afterglowlabs.spotified ] || { echo 'An unrelated Spotified.app is already installed.' >&2; exit 1; }
 fi
+pkill -x Spotified >/dev/null 2>&1 || true
 ditto "$APP" /Applications/Spotified.app
 if [ "$MODE" = '--install-only' ]; then exit 0; fi
 /usr/bin/open /Applications/Spotified.app

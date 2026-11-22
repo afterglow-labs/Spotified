@@ -30,3 +30,19 @@ body{
 .job-sources{display:flex;flex-direction:column;gap:5px;margin-top:12px;min-width:0;font-size:11px}.job-sources>span{color:var(--muted)}.job-sources a{overflow-wrap:anywhere;line-height:1.8}.job-actions{display:flex;gap:10px;margin-top:12px}.job-actions button{font-size:12px}
 
 .spotify-browser>.hint{margin:0 0 18px}.spotify-controls,.spotify-search,.spotify-selection{display:flex;align-items:end;gap:12px;margin-bottom:20px;flex-wrap:wrap}.spotify-controls>label{min-width:210px}.spotify-search .search{flex:1;min-width:180px;width:auto}.spotify-search>label:nth-child(2){width:130px}.spotify-selection{align-items:center;border-block:1px solid var(--border);padding:14px 0;margin-top:22px}.spotify-selection>span{margin-right:auto;font-size:12px}.spotify-review{padding:20px;background:var(--panel);border:1px solid var(--border);border-radius:8px;margin-bottom:24px}.spotify-review>p{margin-top:12px}.spotify-review>.hint{max-height:90px;overflow:auto}.spotify-row{display:flex;align-items:center;gap:14px;border-bottom:1px solid var(--border);padding:12px 0}.spotify-cover{width:48px;height:48px;flex-shrink:0;display:grid;place-items:center;background:var(--selected);border-radius:6px;overflow:hidden}.spotify-cover img{width:100%;height:100%;object-fit:cover}.spotify-title{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}.spotify-title strong,.spotify-title small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.spotify-browser .section-heading{gap:12px;flex-wrap:wrap}.spotify-browser .section-heading h2{flex:1;min-width:150px}.spotify-results{margin-bottom:20px}@media(max-width:600px){.spotify-selection button{padding:7px 9px;font-size:11px}.spotify-search>.search{width:100%;flex-basis:100%}.spotify-title strong{font-size:12px}.spotify-row{gap:10px}.spotify-cover{width:38px;height:38px}.spotify-review{padding:14px}}
+
+.track-row {grid-template-columns:minmax(160px,2fr) minmax(90px,1fr) minmax(90px,1fr) 45px 76px}
+.track-actions,.transport,.dialog-actions {display:flex;align-items:center;gap:4px}
+.track-actions .icon-button,.transport .icon-button {padding:8px}
+.delete-dialog {width:min(390px,90vw);box-sizing:border-box;padding:24px;color:var(--fg);background:var(--panel);border:1px solid var(--border);border-radius:14px}
+.delete-dialog::backdrop {background:rgb(10 4 18 / 72%)}
+.delete-dialog h2 {overflow-wrap:anywhere}
+.delete-dialog p {margin:12px 0 20px}
+.dialog-actions {justify-content:flex-end;gap:10px}
+.delete-action {color:var(--on-action);background:var(--accent)}
+@media(max-width:900px) {.track-row {grid-template-columns:minmax(100px,2fr) minmax(70px,1fr) 40px 76px}}
+@media(max-width:600px) {
+  .track-row {grid-template-columns:minmax(70px,1fr) 76px}
+  .player>.playing-track {flex:1 1 65px}
+  .app-shell:has(.player) main {padding-bottom:120px}
+}

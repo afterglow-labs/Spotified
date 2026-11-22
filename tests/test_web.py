@@ -374,3 +374,46 @@ def test_missing_worker_track_names_are_safe_in_authenticated_state(server):
     assert result['total'] == 5
     assert result['status'] == 'failed'
     assert json.loads(manager.history_path.read_text())[0]['names'] == result['names']
+
+
+def test_delete_local_content_requires_session_and_confirms_file_scope(server):
+    instance, base = server
+    root = instance.manager.roots['music']
+    podcast = instance.manager.roots['podcasts'] / 'Episode.wav'
+    song = root / 'Artist' / 'Track.wav'
+    keep = root / 'Keep.wav'
+    for path in (song, keep, podcast):
+        wav(path)
+    playlist = root / 'Favorites.m3u8'
+    playlist.write_text('#EXTM3U\nArtist/Track.wav\nKeep.wav\n')
+    url = base + '/api/library/delete'
+    identifiers = {'ids': ['music/Favorites.m3u8']}
+    assert requests.post(url, json=identifiers).status_code == 401
+    session = login(base)
+    assert session.post(url, json=identifiers, headers={'X-Spotified-Token': ''}).status_code == 403
+    assert session.post(url, json=identifiers, headers={'Origin': 'https://other.test'}).status_code == 403
+    assert playlist.exists()
+    assert session.post(url, json=identifiers).json() == {'removed': identifiers['ids'], 'failed': []}
+    assert not playlist.exists() and song.exists() and keep.exists()
+    ids = ['podcasts/Episode.wav', 'music/Artist/Track.wav']
+    for _ in range(2):
+        assert session.post(url, json={'ids': ids + ids}).json() == {'removed': ids, 'failed': []}
+    assert keep.exists() and not song.exists() and not podcast.exists()
+    assert [t['id'] for t in session.get(base + '/api/files').json()['tracks']] == ['music/Keep.wav']
+
+
+def test_delete_rejects_paths_before_removing_any_selected_files(server):
+    instance, base = server
+    root = instance.manager.roots['music']
+    wav(root / 'Keep.wav')
+    wav(root.parent / 'outside.wav')
+    (root / 'alias.wav').symlink_to(root / 'Keep.wav')
+    (root / 'alias-dir').symlink_to(root.parent, target_is_directory=True)
+    (root / 'folder.wav').mkdir()
+    session = login(base)
+    url = base + '/api/library/delete'
+    for invalid in ('music/../outside.wav', 'music//outside.wav', 'elsewhere/test.wav',
+                    'music/alias.wav', 'music/alias-dir/outside.wav', 'music/info.json', None):
+        assert session.post(url, json={'ids': ['music/Keep.wav', invalid]}).status_code == 400
+    assert session.post(url, json={'ids': ['music/folder.wav']}).json() == {'removed': [], 'failed': ['music/folder.wav']}
+    assert (root / 'Keep.wav').is_file() and (root.parent / 'outside.wav').is_file()

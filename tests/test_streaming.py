@@ -38,6 +38,9 @@ def test_stream_transcodes_preserves_source_and_cleans_cache(tmp_path):
         assert hashlib.sha256(source.read_bytes()).hexdigest() == digest
         for key, name in [('x' * 32, 'index.m3u8'), (key, '../credentials.json'), (key, 'seg99999.ts')]:
             with pytest.raises(ValueError): cache.resource(key, name)
+        cache.discard_sources({source})
+        assert not cache.entries and not (directory / key).exists()
+        with pytest.raises(ValueError): cache.resource(key, segment)
     finally:
         cache.close()
     assert not directory.exists()

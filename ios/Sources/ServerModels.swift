@@ -30,6 +30,11 @@ struct DownloadJob: Decodable, Identifiable {
     var title: String { names?.first ?? (kind == "login" ? "Spotify connection" : urls.first ?? "Download") }
 }
 
+struct LibraryDeletionResult: Decodable {
+    let removed: [String]
+    let failed: [String]
+}
+
 struct MusicLibrary: Decodable {
     var tracks: [MusicTrack]
     var playlists: [MusicPlaylist]

@@ -377,6 +377,15 @@ class JobManager:
                 self.process = None
                 self._save()
 
+    def delete_files(self, identifiers):
+        result = self.library.delete(identifiers)
+        paths = set()
+        for identifier in result['removed']:
+            kind, name = identifier.split('/', 1)
+            paths.add(self.roots[kind] / name)
+        self.streams.discard_sources(paths)
+        return result
+
     def files(self):
         return self.library.scan()
 
@@ -578,7 +587,8 @@ class Handler(BaseHTTPRequestHandler):
             return self._json({'error': 'Reload this page before trying again.'}, 403)
         try:
             length = int(self.headers.get('Content-Length', 0))
-            if not 0 < length <= 16000 or self.headers.get_content_type() != 'application/json':
+            limit = 8_000_000 if self.path == '/api/library/delete' else 16000
+            if not 0 < length <= limit or self.headers.get_content_type() != 'application/json':
                 raise ValueError('Expected a small JSON request')
             payload = json.loads(self.rfile.read(length))
             if not isinstance(payload, dict):
@@ -587,6 +597,8 @@ class Handler(BaseHTTPRequestHandler):
                 return self._json({'job': self.server.manager.add(payload)}, 201)
             if self.path == '/api/spotify/import':
                 return self._json({'jobs': self.server.manager.import_selection(payload)}, 201)
+            if self.path == '/api/library/delete':
+                return self._json(self.server.manager.delete_files(payload.get('ids')))
             if self.path == '/api/playback':
                 kind, relative = payload.get('root'), payload.get('path')
                 if not isinstance(kind, str) or not isinstance(relative, str):

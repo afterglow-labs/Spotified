@@ -8,6 +8,7 @@ Open **Spotified.app** from Applications. It has its own Dock icon and window, w
 
 - **Library, Albums, Artists, Playlists:** browse actual saved files, search tags, see artwork, play audio, and download files. M3U8 playlists reference the indexed library. Playback depends on the client's codec support; MP3 is an option for compatibility.
 - **Spotify:** browse your connected account's playlists, liked songs, saved albums, and followed artists. Search the catalog, open collections, and select songs or whole albums/playlists to save on your server. This uses the existing Spotify login; no developer API key is needed. See [Spotify account browser](docs/SPOTIFY-CATALOG.md).
+- Play a song to use Previous and Next in the current list. Delete a downloaded song, podcast episode, or album from the library after confirming. Deleting a local playlist keeps its audio files. These actions affect the selected Spotified server.
 - **Downloads:** add Spotify links, preview metadata, queue downloads, cancel work, and inspect activity. Jobs run serially in isolated processes and retain history. Interrupted jobs are marked after restart and can be re-added.
 - **Settings:** choose artist/album folders, separate or shared playlist storage, M3U8 exports, cover images, lyrics, output format, source and encoding quality, duplicate handling, and request pacing. Each queued job keeps the settings it was created with.
 - Album artwork is embedded automatically when available. Separate cover images are optional. Existing files are never moved when changing a layout.

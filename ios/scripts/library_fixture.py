@@ -44,11 +44,13 @@ with tempfile.TemporaryDirectory(prefix='spotified-library-qa-') as directory:
         tags = music_tag.load_file(str(path))
         for key, value in [('artist', artist), ('albumartist', artist), ('album', album), ('tracktitle', title), ('discnumber', disc), ('tracknumber', track), ('year', year)]: tags[key] = value
         tags.save()
+    (music / 'QA deletion playlist.m3u8').write_text(
+        '#EXTM3U\nAlpha Artist/First Album/Opening Song.ogg\nAlpha Artist/First Album/Second Song.flac\n')
     (root / 'config.json').write_text(json.dumps(dict(ROOT_PATH=str(music), ROOT_PODCAST_PATH=str(root / 'podcasts'), OUTPUT_ALBUM=LAYOUTS['albums'], OUTPUT_SINGLE=LAYOUTS['albums'])))
     set_credentials(root, 'fixture-user', 'fixture-password')
     manager = JobManager(root, start=False); manager.account = dict(status='connected', message='Offline fixture')
     server = WebServer(('127.0.0.1', args.port), manager)
     server.RequestHandlerClass = FixtureHandler
-    print('Library playback fixture ready', flush=True)
+    print(f'Library playback fixture ready on port {server.server_port}', flush=True)
     try: server.serve_forever()
     finally: server.server_close(); manager.close()

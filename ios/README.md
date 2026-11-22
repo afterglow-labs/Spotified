@@ -33,6 +33,8 @@ The server serves compatible media directly and prepares Ogg/Opus as temporary A
 
 ## Install
 
+Version **0.6.0 (9)** adds confirmed deletion of downloaded audio, albums, and local playlists. Swipe a song or open its details to delete it. Albums and playlists have a Delete button inside the collection. Previous and Next are available in the mini-player and Now Playing. The matching server exposes these controls to the desktop client as well.
+
 Version **0.5.0 (8)** includes the Spotify tab, Odysseus's Afterglow appearance with its static background glow and control colors, and the updated music icon. Browsing requires the matching server update. It reuses the Spotify account already connected to that server. See [catalog behavior and API](../docs/SPOTIFY-CATALOG.md).
 
 The signed IPA is `ios/.build/Export/Spotified.ipa`. A versioned copy is delivered to the registered iPhone through Tailscale Taildrop, matching the existing Odysseus/Feather workflow. Receive the IPA in Tailscale and import it into Feather to sign/install using your configured identity. Keep bundle identifier `com.afterglowlabs.spotified.ios`.

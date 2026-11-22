@@ -31,6 +31,55 @@ final class SpotifiedUITests: XCTestCase {
         capture(app, "Spotify search and account browser")
     }
 
+    @MainActor func testDeleteLibraryContentAndMiniPlayerTransport() async throws {
+        continueAfterFailure = false
+        guard let origin = ProcessInfo.processInfo.environment["SPOTIFIED_DELETE_FIXTURE"],
+              URL(string: origin)?.host == "127.0.0.1" else { throw XCTSkip("Requires the disposable local deletion fixture.") }
+        let app = XCUIApplication()
+        app.launchArguments = ["--ui-testing"]
+        app.launchEnvironment["SPOTIFIED_TEST_ORIGIN"] = origin
+        app.launchEnvironment["SPOTIFIED_TEST_USERNAME"] = "fixture-user"
+        app.launch()
+        let field = app.secureTextFields["serverPassword"]
+        XCTAssertTrue(field.waitForExistence(timeout: 10)); field.tap(); field.typeText("fixture-password")
+        app.buttons["connectButton"].tap()
+        XCTAssertTrue(app.buttons["browsePlaylists"].waitForExistence(timeout: 15))
+        for owner in [app, XCUIApplication(bundleIdentifier: "com.apple.springboard")] {
+            let notNow = owner.buttons["Not Now"]
+            if notNow.waitForExistence(timeout: 1) { notNow.tap() }
+        }
+        app.buttons["browsePlaylists"].tap()
+        app.staticTexts["QA deletion playlist"].tap()
+        app.buttons["playCollection"].tap()
+        let nowPlaying = app.buttons["nowPlaying"]
+        XCTAssertTrue(nowPlaying.waitForExistence(timeout: 10))
+        XCTAssertEqual(nowPlaying.value as? String, "Opening Song")
+        app.buttons["miniNext"].tap()
+        XCTAssertEqual(nowPlaying.value as? String, "Second Song")
+        XCTAssertFalse(app.buttons["miniNext"].isEnabled)
+        app.buttons["miniPrevious"].tap()
+        if nowPlaying.value as? String == "Second Song" { app.buttons["miniPrevious"].tap() }
+        XCTAssertEqual(nowPlaying.value as? String, "Opening Song")
+        app.buttons["Delete playlist"].tap()
+        app.alerts.firstMatch.buttons["Cancel"].tap()
+        XCTAssertTrue(app.buttons["playCollection"].exists)
+        app.buttons["Delete playlist"].tap()
+        app.alerts.firstMatch.buttons["Delete"].tap()
+        XCTAssertTrue(app.staticTexts["No playlists yet"].waitForExistence(timeout: 10))
+        XCTAssertTrue(nowPlaying.exists)
+        app.navigationBars.buttons.firstMatch.tap()
+        app.buttons["browseSongs"].tap()
+        app.buttons["Details for Opening Song"].tap()
+        let delete = app.buttons["Delete from server"]
+        if !delete.isHittable { app.swipeUp() }
+        delete.tap()
+        app.alerts.firstMatch.buttons["Delete"].tap()
+        let gone = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: nowPlaying)
+        await fulfillment(of: [gone], timeout: 12)
+        XCTAssertFalse(app.buttons["Details for Opening Song"].exists)
+        XCTAssertTrue(app.buttons["Details for Second Song"].exists)
+    }
+
     @MainActor func testRemoteLibraryPlayback() async throws {
         continueAfterFailure = false
         let env = ProcessInfo.processInfo.environment

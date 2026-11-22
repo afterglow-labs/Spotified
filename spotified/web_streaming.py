@@ -80,7 +80,7 @@ class StreamCache:
                 except OSError as exc:
                     shutil.rmtree(directory, ignore_errors=True)
                     raise ValueError('The server could not start FFmpeg for playback.') from exc
-                entry = {'directory': directory, 'process': process, 'touched': time.monotonic(), 'error': None, 'lossless': lossless}
+                entry = {'source': source, 'directory': directory, 'process': process, 'touched': time.monotonic(), 'error': None, 'lossless': lossless}
                 self.entries[key] = entry
                 threading.Thread(target=self._watch, args=(entry,), daemon=True).start()
             entry['touched'] = time.monotonic()
@@ -133,13 +133,26 @@ class StreamCache:
             path = self.media_path(key, filename)
             return path.read_bytes(), 'application/vnd.apple.mpegurl' if filename.endswith('.m3u8') else 'video/mp2t'
 
+    @staticmethod
+    def _stop(entry):
+        process = entry['process']
+        if process.poll() is None:
+            process.terminate()
+            try: process.wait(timeout=5)
+            except subprocess.TimeoutExpired: process.kill(); process.wait()
+
+    def discard_sources(self, sources):
+        with self.lock:
+            for key, entry in list(self.entries.items()):
+                if entry['source'] in sources:
+                    entry['error'] = 'This file was deleted from the library.'
+                    self._stop(entry)
+                    shutil.rmtree(entry['directory'], ignore_errors=True)
+                    del self.entries[key]
+
     def close(self):
         with self.lock:
             self.closed = True
             for entry in self.entries.values():
-                process = entry['process']
-                if process.poll() is None:
-                    process.terminate()
-                    try: process.wait(timeout=5)
-                    except subprocess.TimeoutExpired: process.kill(); process.wait()
+                self._stop(entry)
             shutil.rmtree(self.directory, ignore_errors=True)

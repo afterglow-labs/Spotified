@@ -1,0 +1,70 @@
+import {chromium} from '@playwright/test';
+import assert from 'node:assert/strict';
+import {spawn} from 'node:child_process';
+import {once} from 'node:events';
+import path from 'node:path';
+import {createInterface} from 'node:readline';
+
+const root = path.resolve(import.meta.dirname, '..');
+const fixture = spawn(process.env.SPOTIFIED_QA_PYTHON || path.join(root, '.venv/bin/python'),
+  ['-u', 'ios/scripts/library_fixture.py', '--port', '0'], {cwd: root, env: {...process.env, PYTHONPATH: root}, stdio: ['ignore', 'pipe', 'inherit']});
+let browser;
+try {
+  const lines = createInterface({input: fixture.stdout});
+  const [ready] = await Promise.race([once(lines, 'line'), once(fixture, 'exit').then(() => { throw Error('Fixture exited before startup'); })]);
+  const port = ready.match(/^Library playback fixture ready on port (\d+)$/)?.[1];
+  assert(port, 'Expected the disposable playback fixture');
+  browser = await chromium.launch({executablePath: process.env.CHROME_BIN || (process.platform === 'darwin'
+    ? '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome' : '/usr/bin/google-chrome')});
+  const page = await browser.newPage({viewport: {width: 1280, height: 900}});
+  const errors = [];
+  page.on('pageerror', e => errors.push(e.message));
+  const button = name => page.getByRole('button', {name, exact: true});
+  const dialog = page.getByRole('dialog');
+  const title = name => page.locator('.playing-track strong').getByText(name, {exact: true});
+  await page.goto('http://127.0.0.1:' + port);
+  await page.getByLabel('Username', {exact: true}).fill('fixture-user');
+  await page.getByLabel('Password', {exact: true}).fill('fixture-password');
+  await button('Sign in').click();
+  await button('Playlists').click();
+  await button('QA deletion playlist 2 tracks').click();
+  await button('Play Opening Song').click();
+  await title('Opening Song').waitFor();
+  assert(await button('Previous song').isDisabled());
+  await button('Next song').click();
+  await title('Second Song').waitFor();
+  assert(await button('Next song').isDisabled());
+  await button('Previous song').click();
+  await title('Opening Song').waitFor();
+  await page.locator('audio').evaluate(async audio => { await audio.play(); audio.currentTime = audio.duration - 0.3; });
+  await title('Second Song').waitFor();
+  await button('Delete playlist').click();
+  await dialog.getByRole('button', {name: 'Cancel'}).click();
+  await button('Delete playlist').click();
+  await dialog.getByRole('button', {name: 'Delete', exact: true}).click();
+  await dialog.waitFor({state: 'hidden'});
+  assert(await title('Second Song').isVisible());
+  await button('Library').click();
+  await button('Delete Opening Song').click();
+  await dialog.getByRole('button', {name: 'Delete', exact: true}).click();
+  await button('Play Opening Song').waitFor({state: 'detached'});
+  assert(await title('Second Song').isVisible());
+  await button('Albums').click();
+  await button('First Album Alpha Artist').click();
+  await button('Delete album').click();
+  assert(await dialog.getByText(/2 audio files/).isVisible());
+  await dialog.getByRole('button', {name: 'Delete', exact: true}).click();
+  await page.locator('.player').waitFor({state: 'detached'});
+  await button('First Album Beta Artist').waitFor();
+  await button('Library').click();
+  assert.equal(await page.getByRole('button', {name: /^Play /}).count(), 2);
+  await page.setViewportSize({width: 390, height: 844});
+  await button('Play Other Song').click();
+  assert(await button('Previous song').isVisible() && await button('Next song').isVisible());
+  assert.equal(await page.evaluate(() => document.documentElement.scrollWidth), 390);
+  assert.deepEqual(errors, []);
+  console.log('Passed desktop library deletion, cancel, playback order, auto-advance, queue pruning and narrow layout.');
+} finally {
+  await browser?.close();
+  fixture.kill();
+}
