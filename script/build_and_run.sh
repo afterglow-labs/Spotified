@@ -16,8 +16,8 @@ import os, plistlib
 from pathlib import Path
 root = Path(os.environ['SPOTIFIED_ROOT'])
 values = dict(CFBundleName='Spotified', CFBundleDisplayName='Spotified',
-              CFBundleIdentifier='com.afterglowlabs.spotified', CFBundleVersion='9',
-              CFBundleShortVersionString='0.6.0', CFBundleExecutable='Spotified',
+              CFBundleIdentifier='com.afterglowlabs.spotified', CFBundleVersion='10',
+              CFBundleShortVersionString='0.6.1', CFBundleExecutable='Spotified',
               CFBundlePackageType='APPL', NSPrincipalClass='NSApplication',
               LSMinimumSystemVersion='13.0', NSHighResolutionCapable=True,
               CFBundleIconFile='Spotified', NSHumanReadableCopyright='Afterglow Labs',
