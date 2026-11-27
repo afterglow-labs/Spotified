@@ -81,7 +81,7 @@ import Observation
     private func load() {
         loadTask?.cancel(); generation = UUID(); wantsPlayback = true
         let token = generation
-        engine.pause(); engine.replaceCurrentItem(with: nil)
+        engine.pause(); VorbisAsset.cancel(engine.currentItem); engine.replaceCurrentItem(with: nil)
         elapsed = 0; duration = current?.duration ?? 0; error = nil; isLoading = true; isPlaying = false
         updateNowPlaying()
         guard let track = current, let provider else { isLoading = false; return }
@@ -139,7 +139,7 @@ import Observation
     }
     func stop() {
         loadTask?.cancel(); generation = UUID(); itemObservation = nil; wantsPlayback = false
-        engine.pause(); engine.replaceCurrentItem(with: nil)
+        engine.pause(); VorbisAsset.cancel(engine.currentItem); engine.replaceCurrentItem(with: nil)
         queue = []; provider = nil; index = 0; isPlaying = false; isLoading = false; elapsed = 0; duration = 0; error = nil
         try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
         updateNowPlaying()

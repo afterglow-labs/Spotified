@@ -64,7 +64,7 @@ struct NowPlayingView: View {
                             .accessibilityLabel(player.isPlaying ? "Pause" : "Play").accessibilityIdentifier("playerPlayPause")
                         Button { player.next() } label: { Image(systemName: "forward.end.fill").font(.title) }.disabled(!player.hasNext).accessibilityLabel("Next song").accessibilityIdentifier("playerNext")
                     }
-                    if player.isLoading { ProgressView("Preparing song on server…") }
+                    if player.isLoading { ProgressView("Loading song…") }
                     if let error = player.error { ErrorNotice(message: error) }
                     HStack {
                         Label("Streaming from your server", systemImage: "server.rack").font(.caption).foregroundStyle(.secondary)

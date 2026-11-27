@@ -169,3 +169,6 @@ ios/.build/
 ios/Spotified.xcodeproj/
 ios/Info.plist
 *.xcuserstate
+android/.gradle/
+android/**/build/
+android/local.properties

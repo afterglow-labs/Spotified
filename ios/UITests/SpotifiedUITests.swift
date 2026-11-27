@@ -146,6 +146,11 @@ final class SpotifiedUITests: XCTestCase {
         XCTAssertTrue(songs.element(boundBy: 0).label.contains("Opening Song"))
         XCTAssertTrue(songs.element(boundBy: 1).label.contains("Second Song"))
         XCTAssertTrue(songs.element(boundBy: 2).label.contains("Disc Two Song"))
+        func receipt() async throws -> [String: Int] {
+            let (data, _) = try await URLSession.shared.data(from: URL(string: origin + "/test/receipt")!)
+            return try JSONDecoder().decode([String: Int].self, from: data)
+        }
+        let before = try await receipt()
         songs.element(boundBy: 0).tap()
         let pause = app.buttons["miniPlayPause"]
         XCTAssertTrue(pause.waitForExistence(timeout: 20))
@@ -158,6 +163,20 @@ final class SpotifiedUITests: XCTestCase {
         XCTAssertTrue(progress.exists)
         try await Task.sleep(for: .seconds(2))
         XCTAssertNotEqual(app.staticTexts["playbackElapsed"].label, "0:00", "The player clock must advance while streamed audio plays.")
+        progress.adjust(toNormalizedSliderPosition: 0.5)
+        try await Task.sleep(for: .seconds(1))
+        let time = app.staticTexts["playbackElapsed"].label.split(separator: ":").compactMap { Int($0) }
+        XCTAssertEqual(time.count, 2)
+        XCTAssertGreaterThanOrEqual(time[0] * 60 + time[1], 8)
+        let originalTime = app.staticTexts["playbackElapsed"].label
+        XCUIDevice.shared.press(.home)
+        try await Task.sleep(for: .seconds(3))
+        app.activate()
+        XCTAssertEqual(app.buttons["playerPlayPause"].label, "Pause")
+        XCTAssertNotEqual(app.staticTexts["playbackElapsed"].label, originalTime)
+        let direct = try await receipt()
+        XCTAssertGreaterThan(try XCTUnwrap(direct["original_ranges"]), try XCTUnwrap(before["original_ranges"]))
+        XCTAssertEqual(direct["playback"], before["playback"], "Vorbis must play without preparing a server transcode.")
         capture(app, "Native server playback")
         app.buttons["playerPlayPause"].tap()
         XCTAssertEqual(app.buttons["playerPlayPause"].label, "Play")
@@ -172,10 +191,8 @@ final class SpotifiedUITests: XCTestCase {
         app.activate()
         XCTAssertEqual(app.buttons["playerPlayPause"].label, "Pause")
         XCTAssertNotEqual(app.staticTexts["playbackElapsed"].label, beforeBackground, "Playback must continue while the app is in the background.")
-        let (data, _) = try await URLSession.shared.data(from: URL(string: origin + "/test/receipt")!)
-        let receipt = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Int])
-        XCTAssertGreaterThanOrEqual(receipt["playback"] ?? 0, 2)
-        XCTAssertGreaterThan(receipt["segments"] ?? 0, 0, "The iPhone must receive authenticated audio segments from the server.")
+        let lossless = try await receipt()
+        XCTAssertGreaterThan(try XCTUnwrap(lossless["playback"]), try XCTUnwrap(direct["playback"]), "FLAC still uses the server's Apple Lossless path.")
         app.buttons["playerPlayPause"].tap()
     }
 

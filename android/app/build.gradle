@@ -1,0 +1,15 @@
+plugins {
+    id 'com.android.application' version '9.1.1'
+}
+
+android {
+    namespace = 'com.afterglowlabs.spotified'
+    compileSdk = 36
+    defaultConfig {
+        applicationId = 'com.afterglowlabs.spotified'
+        minSdk = 26
+        targetSdk = 36
+        versionCode = 11
+        versionName = '0.7.0'
+    }
+}

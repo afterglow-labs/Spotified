@@ -19,7 +19,7 @@ The current personal preset stores music in `~/Music/Spotified Music` and podcas
 
 The WSL2 server runs at `https://nibiru-darklight-1.osiris-cosmological.ts.net:8443` within Tailscale. The native iPhone/iPad client controls downloads and streams the server library: download jobs run and files remain on that server. It follows the Odysseus iOS client with native SwiftUI navigation, Keychain login, and library/queue/settings screens that call the server API. Version 0.4.0 adds artist → album → song browsing, sorting, and native playback with an album/playlist queue, seeking, AirPlay, background audio, and lock-screen controls. The existing Mac client keeps its local connection.
 
-See [iOS build and usage](ios/README.md) and [WSL deployment and storage](docs/WSL.md).
+Both mobile clients can stream original Ogg Vorbis songs. See [iOS build and usage](ios/README.md), [Android APK build and usage](android/README.md), and [WSL deployment and storage](docs/WSL.md).
 
 Version 0.5.0 adds the Spotify account browser and search to the native client. The web and desktop clients use Odysseus's Afterglow palette, static sunset glow, and system typography. The iOS app defaults to the matching native Afterglow appearance, with a purple and orange music icon. Existing Dark preferences migrate to Afterglow; Light remains available on iOS.
 

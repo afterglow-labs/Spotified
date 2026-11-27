@@ -113,10 +113,28 @@ private final class NoRedirect: NSObject, URLSessionTaskDelegate {
     }
     func playbackItem(_ track: MusicTrack) async throws -> AVPlayerItem {
         guard let cookie, let divider = track.id.firstIndex(of: "/") else { throw ClientError.signedOut }
+        let root = String(track.id[..<divider])
+        let path = String(track.id[track.id.index(after: divider)...])
+        if ["ogg", "oga"].contains((path as NSString).pathExtension.lowercased()), track.size > 0 {
+            var parts = URLComponents()
+            parts.path = "/media"
+            parts.queryItems = [URLQueryItem(name: "root", value: root), URLQueryItem(name: "path", value: path)]
+            // The server uses form-style query decoding, where an unescaped plus means a space.
+            parts.percentEncodedQuery = parts.percentEncodedQuery?.replacingOccurrences(of: "+", with: "%2B")
+            guard let path = parts.string else { throw ClientError.message("Invalid media address.") }
+            var media = try request(path)
+            media.setValue("audio/ogg", forHTTPHeaderField: "Accept")
+            let source = VorbisAsset(request: media, byteCount: track.size)
+            let supported = try await withTaskCancellationHandler {
+                try await source.prepare()
+            } onCancel: { source.cancel() }
+            try Task.checkCancellation()
+            if supported { return source.playerItem() }
+        }
         _ = try await state()
         struct Reply: Decodable { let url: String }
         let reply = try decode(Reply.self, await send(request("/api/playback", method: "POST", body: [
-            "root": String(track.id[..<divider]), "path": String(track.id[track.id.index(after: divider)...])
+            "root": root, "path": path
         ])).0)
         guard reply.url.hasPrefix("/media?") || reply.url.hasPrefix("/stream/"),
               let url = URL(string: reply.url, relativeTo: address.url)?.absoluteURL, address.contains(url) else {

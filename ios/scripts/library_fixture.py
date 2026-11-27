@@ -3,8 +3,10 @@
 import argparse
 import json
 from pathlib import Path
+import shutil
 import subprocess
 import tempfile
+from urllib.parse import parse_qs, urlsplit
 
 import music_tag
 
@@ -14,13 +16,18 @@ from spotified.web_settings import LAYOUTS
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--port', type=int, default=18770)
+parser.add_argument('--vorbis-sample', type=Path, help='Use a copy of a real Ogg track as the opening song.')
 args = parser.parse_args()
-counts = {'playback': 0, 'segments': 0}
+counts = {'playback': 0, 'segments': 0, 'original_ranges': 0}
 
 
 class FixtureHandler(Handler):
     def do_GET(self):
         if self.path == '/test/receipt': return self._json(counts)
+        url = urlsplit(self.path)
+        if (url.path == '/media' and self.headers.get('Range') and self._authorized()
+                and parse_qs(url.query).get('path', [''])[0].lower().endswith('.ogg')):
+            counts['original_ranges'] += 1
         if self.path.startswith('/stream/') and '.ts' in self.path and self._authorized(): counts['segments'] += 1
         return super().do_GET()
 
@@ -40,7 +47,10 @@ with tempfile.TemporaryDirectory(prefix='spotified-library-qa-') as directory:
         lossless = title == 'Second Song'
         path = music / artist / album / (title + ('.flac' if lossless else '.ogg'))
         path.parent.mkdir(parents=True, exist_ok=True)
-        subprocess.run(['ffmpeg', '-nostdin', '-loglevel', 'error', '-f', 'lavfi', '-i', 'anullsrc=r=44100:cl=stereo', '-t', '20', '-c:a', 'flac' if lossless else 'vorbis', '-strict', '-2', str(path)], check=True)
+        if args.vorbis_sample and title == 'Opening Song':
+            shutil.copyfile(args.vorbis_sample, path)
+        else:
+            subprocess.run(['ffmpeg', '-nostdin', '-loglevel', 'error', '-f', 'lavfi', '-i', 'anullsrc=r=44100:cl=stereo', '-t', '20', '-c:a', 'flac' if lossless else 'vorbis', '-strict', '-2', str(path)], check=True)
         tags = music_tag.load_file(str(path))
         for key, value in [('artist', artist), ('albumartist', artist), ('album', album), ('tracktitle', title), ('discnumber', disc), ('tracknumber', track), ('year', year)]: tags[key] = value
         tags.save()

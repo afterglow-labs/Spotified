@@ -25,11 +25,11 @@ The same screen offers **Check Spotify connection**, the latest connection resul
 
 `SpotifyLoginReceiver` listens only on the device's loopback address while the Spotify sheet is open. The callback is checked against its exact destination and random state, then sent through the authenticated, CSRF-protected server API. The server keeps the PKCE verifier and exchanges the single-use code. Authorization URLs and codes are excluded from persisted history. This uses Spotify's supported [loopback redirect](https://developer.spotify.com/documentation/web-api/concepts/redirect_uri) flow and Apple's [system browser sheet](https://developer.apple.com/documentation/safariservices/sfsafariviewcontroller). The WSL server must include this update; older servers only support desktop authorization.
 
-## Streaming in 0.4.0 (5)
+## Streaming
 
 Choose **Library → Artist → Album**, then tap a song, **Play**, or **Shuffle**. Tap the mini-player to open Now Playing. Playback continues while the phone is locked or another app is open. The server must remain reachable through Tailscale.
 
-The server serves compatible media directly and prepares Ogg/Opus as temporary AAC 320 kbps HLS for the native player. FLAC uses a temporary lossless ALAC stream. Source files, tags, and artwork are unchanged. Temporary playback data is limited to 512 MiB with at most two simultaneous transcodes, and is cleaned up on eviction or server shutdown. This is streaming playback; it does not add an offline audio library or export on the phone.
+Starting in 0.7.0 (11), the iPhone reads mono and stereo Ogg Vorbis songs directly from the authenticated media endpoint. It requests portions of the original file as needed and decodes them to floating-point PCM on the phone. The same player handles seeking, background playback, AirPlay, and lock-screen controls. MP3, M4A, and WAV also stream directly. FLAC uses the server's Apple Lossless stream. Other formats, including Opus, use the existing server playback endpoint.
 
 ## Install
 
